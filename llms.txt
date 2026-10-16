@@ -1,0 +1,28 @@
+# @mgpl-diagnostics/pgbouncer-kit
+
+> Reusable PgBouncer setup for the MGPL Diagnostics services (Node.js ≥ 20, PgBouncer ≥ 1.21): env-driven pgbouncer.ini, SCRAM/MD5 userlists, auth_query SQL, a docker-compose service, TLS options, a credential-free readiness probe and the `mgpl-pgbouncer` CLI. No runtime dependencies. Used in front of PostgreSQL by the api server and worker (db-kit's PostgreSQL backend).
+
+Key facts for agents:
+- `defineConfig({ databases: [{ name, host, port?, dbname?, poolSize?, poolMode? }], ... })` fills defaults (transaction pooling, scram-sha-256, 0.0.0.0:6432, default_pool_size 20, max_client_conn 500, max_prepared_statements 200, client TLS off, server TLS prefer) and throws PGBOUNCER_BAD_CONFIG listing every problem.
+- `renderIni(config)` → pgbouncer.ini (never a password). `configFromEnv(env)` reads PGBOUNCER_* (see `ENV_VARS`).
+- Users: `usersFromEnv(env)` + `renderUserlist(entries, format = "scram")`; `scramVerifier(password)`, `alterRoleSql(user, verifier)` so PostgreSQL and PgBouncer share a verifier (needed for SCRAM pass-through); `PG_SHADOW_QUERY` + `userlistFromRows`; `authQuerySetupSql()` + `AUTH_QUERY` (auth user needs `format: "plain"`).
+- `pgbouncerUrl(DATABASE_URL, { host: "pgbouncer" })` rewrites an app URL to go through PgBouncer.
+- `renderCompose({ tlsDir?, publish?, dependsOn? })` → compose service (image `DEFAULT_IMAGE`, pg_isready health check).
+- Health: `probePgBouncer`, `waitForPgBouncer` (PGBOUNCER_UNREACHABLE), `readiness({ query? })`.
+- CLI: `mgpl-pgbouncer render|verifier|auth-setup|compose|check`.
+- Errors: `PgBouncerError.code` = PGBOUNCER_BAD_CONFIG, PGBOUNCER_BAD_ENV, PGBOUNCER_BAD_URL, PGBOUNCER_BAD_USER, PGBOUNCER_UNREACHABLE; `problems` lists each issue.
+
+## Docs
+
+- [README](README.md): where it is used, adopting it in a service, defaults, environment, auth, TLS, health, CLI
+- [AGENTS.md](AGENTS.md): map and rules
+
+## Source
+
+- [src/config.ts](src/config.ts): configuration, defaults, checks
+- [src/ini.ts](src/ini.ts): pgbouncer.ini
+- [src/env.ts](src/env.ts): environment variables
+- [src/userlist.ts](src/userlist.ts): SCRAM, MD5, userlist, SQL helpers
+- [src/compose.ts](src/compose.ts): docker-compose service
+- [src/health.ts](src/health.ts): probe, wait, readiness
+- [src/cli.ts](src/cli.ts): the CLI
