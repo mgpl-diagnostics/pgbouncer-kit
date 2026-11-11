@@ -21,9 +21,9 @@ jobs:
       REQUIRE_PGBOUNCER: "1"
     steps:
       - uses: actions/checkout@v7
-      - uses: mgpl-diagnostics/.github/actions/node@claude/project-thread-dsh6g4
+      - uses: mgpl-diagnostics/.github/actions/node@main
       # PostgreSQL and PgBouncer from cached .debs (servers started by the tests, not as services)
-      - uses: mgpl-diagnostics/.github/actions/apt@claude/project-thread-dsh6g4
+      - uses: mgpl-diagnostics/.github/actions/apt@main
         with:
           packages: postgresql pgbouncer
       - name: Stop the packaged services, find PostgreSQL's binaries
